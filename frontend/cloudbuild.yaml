@@ -1,0 +1,37 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        'asia-east1-docker.pkg.dev',
+        '.',
+      ]
+  # Push the container image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'push',
+        'asia-east1-docker.pkg.dev',
+      ]
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      [
+        'run',
+        'deploy',
+        '',
+        '--image',
+        '',
+        '--region',
+        'asia-east1',
+        '--allow-unauthenticated',
+        '--port',
+        '80',
+        '--platform',
+        'managed',
+      ]
+images:
+  - 'asia-east1-docker.pkg.dev'
