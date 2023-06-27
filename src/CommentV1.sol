@@ -10,6 +10,7 @@ contract CommentV1 is CommentGovernance{
         uint256 createTime;
         string name;
         string description;
+        address creator;
         Status status;
         CommentVotes votes;
     }
@@ -32,8 +33,7 @@ contract CommentV1 is CommentGovernance{
     }
 
     uint private comment_count = 1;
-
-    mapping(address => Comment[]) private _commentsByAddress;
+    Comment[] public commentList;
 
     function createComment(string calldata _name, string calldata _description, uint _salary)  external {
 
@@ -45,24 +45,47 @@ contract CommentV1 is CommentGovernance{
                 name: _name, 
                 description: _description, 
                 salary: _salary,
+                creator: msg.sender,
                 status: Status.Voting,
                 votes: CommentVotes(0,0,0)
             }
         );
 
         comment_count ++;
-
-        Comment[] storage comments = _commentsByAddress[msg.sender];
-        comments.push(tempCom);
+        commentList.push(tempCom);
 
         _addVoting(tempCom.id);
     }
 
-    function getCommentsByAddress(address creator) view external returns(Comment[] memory) {
-        return _commentsByAddress[creator];
+    function getCommentByAddress(address creator) external view returns (Comment[] memory){
+        Comment[] memory tempComments = new Comment[](commentList.length);
+        for (uint i = 0; i < commentList.length; i ++ )
+        {
+            if(commentList[i].creator == creator)
+            {
+                tempComments[tempComments.length] = commentList[i];
+            }
+        }
+        return tempComments;
     }
 
     function executeVotingReward(uint commentId) external {
         return _executeVotingResult(commentId);
+    }
+
+    function vote(uint commentId, VoteTypes voteTypes, uint256 amount) external {
+        Comment storage comments;
+        for (uint i = 0; i < commentList.length; i ++ )
+        {
+            if(commentList[i].id == commentId)
+            {
+                comments = commentList[i];
+                CommentVotes storage currentVotes = comments.votes;
+                if(voteTypes == VoteTypes.Against) { currentVotes.against += amount;}
+                if(voteTypes == VoteTypes.Agree) { currentVotes.agree += amount;}
+                if(voteTypes == VoteTypes.Abstain) { currentVotes.abstain += amount;}
+                break;
+            }
+        }
     }
 }
