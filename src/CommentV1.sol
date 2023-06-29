@@ -33,7 +33,10 @@ contract CommentV1 is CommentGovernance{
     }
 
     uint private comment_count = 1;
-    Comment[] public commentList;
+    mapping(string => bool) public isCompanyExist;
+    string[] public companyList;
+    mapping(string => mapping(uint256 => Comment)) public commentDetail;
+    mapping(string => Comment[]) public commentsByCompany;
 
     function createComment(string calldata _name, string calldata _description, uint _salary)  external {
 
@@ -51,41 +54,33 @@ contract CommentV1 is CommentGovernance{
             }
         );
 
-        comment_count ++;
-        commentList.push(tempCom);
-
+        if(isCompanyExist[_name] == false)
+        {
+            companyList.push(_name);
+        }
+        commentsByCompany[_name].push(tempCom);
+        commentDetail[_name][comment_count] = tempCom;
         _addVoting(tempCom.id);
+        comment_count ++;
     }
 
-    function getCommentByAddress(address creator) external view returns (Comment[] memory){
-        Comment[] memory tempComments = new Comment[](commentList.length);
-        for (uint i = 0; i < commentList.length; i ++ )
-        {
-            if(commentList[i].creator == creator)
-            {
-                tempComments[tempComments.length] = commentList[i];
-            }
-        }
-        return tempComments;
+    function getCompanyList() external view returns (string[] memory){
+        return companyList;
+    }
+
+    function getCommentsByConpany(string calldata _company) external view returns (Comment[] memory){
+        return commentsByCompany[_company];
     }
 
     function executeVotingReward(uint commentId) external {
         return _executeVotingResult(commentId);
     }
 
-    function vote(uint commentId, VoteTypes voteTypes, uint256 amount) external {
-        Comment storage comments;
-        for (uint i = 0; i < commentList.length; i ++ )
-        {
-            if(commentList[i].id == commentId)
-            {
-                comments = commentList[i];
-                CommentVotes storage currentVotes = comments.votes;
-                if(voteTypes == VoteTypes.Against) { currentVotes.against += amount;}
-                if(voteTypes == VoteTypes.Agree) { currentVotes.agree += amount;}
-                if(voteTypes == VoteTypes.Abstain) { currentVotes.abstain += amount;}
-                break;
-            }
-        }
+    function vote(uint commentId, string calldata companyName, VoteTypes voteTypes, uint256 amount) external {
+        Comment storage comment = commentDetail[companyName][commentId];
+        CommentVotes storage currentVotes = comment.votes;
+        if(voteTypes == VoteTypes.Against) { currentVotes.against += amount;}
+        if(voteTypes == VoteTypes.Agree) { currentVotes.agree += amount;}
+        if(voteTypes == VoteTypes.Abstain) { currentVotes.abstain += amount;}
     }
 }
