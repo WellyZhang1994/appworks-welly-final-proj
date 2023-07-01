@@ -15,6 +15,8 @@ import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
 import _ from 'lodash'
 import EmailIcon from '@mui/icons-material/Email';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import commentContract from '../../contracts/commentAbi';
+import { ethers } from "ethers";
 
 interface Props {
     children: JSX.Element | JSX.Element[];
@@ -80,11 +82,61 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
     const theme: {[key: string]: {[key: string]:string}}  = useSelector((state: RootState) => state.theme)
     const themeSelected :string = useSelector((state: RootState) => state.themeSelected)
     const dispatch = useDispatch()
+    const loginUser = useSelector((state: RootState) => state.loginUser)
+    const tokenAddress = '0x0Cd698BF94dE7c43Ba6dB1E6Fa37D9005223258f'
+    const commentProxyAddress = '0xFb50dCC6ccd62b996B1F69F1837718c19045DaBF'
+
+
+    console.log(commentContract)
+
+    const createComments = async () =>
+    {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const signer = await provider.getSigner()
+        const commentContractInstance = new ethers.Contract(commentProxyAddress, commentContract, signer)
+        const transaction = await commentContractInstance.createComment("first company", "test", 10000)
+        const transactionReceipt = await transaction.wait();
+        if (transactionReceipt.status !== 1) {
+            alert('error message');
+        return;
+        }
+        console.log(transactionReceipt)
+    }
+
+    useEffect(() =>
+    {
+        if (!_.isEmpty((window as any).ethereum) && loginUser !== '')
+        {
+            const init = async () =>
+            {
+                
+                const provider = new ethers.BrowserProvider(window.ethereum)
+                const signer = await provider.getSigner()
+                const commentContractInstance = new ethers.Contract(commentProxyAddress, commentContract, signer)
+                const result = await commentContractInstance.getCompanyList();
+                result.map((x:any) =>
+                {
+                    console.log(x)
+                })
+
+                const resultv2 = await commentContractInstance.getCommentsByConpany('first company');
+                resultv2.map((x: any) =>
+                {
+                    console.log(x['1'])
+                })
+            }
+            init()
+        }
+
+    })
 
     return (
         <Grid container direction='column' justifyContent='center' alignItems='center' className={classes.main}>
-            <Grid container direction='column' justifyContent='space-between' alignItems='center' className={classes.mainContainer}>
+            <Grid container direction='column' alignItems='center' className={classes.mainContainer}>
                 {'Company Page'}
+                <Button onClick={()=> createComments()}>
+                    {'Create a comment'}
+                </Button>
             </Grid>
         </Grid>
 

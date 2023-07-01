@@ -1,7 +1,8 @@
 import React, {useState} from 'react';
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { useHistory, useLocation } from "react-router-dom";
 import { RootState } from '../reducers/index'
+import { loginUser } from '../actions/companyAction'
 import {
     Grid,
     AppBar,
@@ -20,7 +21,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import _ from 'lodash'
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
 import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
+import { ethers } from "ethers";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -60,35 +61,26 @@ const useStyles = makeStyles((theme: Theme) =>
     })
 );
 
-
-
-const LoginWeb3 = (setAddress: any) =>
+const ConnectWallet = async (setAddress: any, dispatch:any) =>
 {
-    console.log('check matamask')
-    if (typeof window.ethereum !== 'undefined') {
-		console.log('MetaMask is installed!');
-		const accounts = window.ethereum.request({ method: 'eth_requestAccounts' });
-			Promise.resolve(accounts).then(x =>
-            {
-                console.log(x)
-                setAddress(x[0])
-			})
-	}
+    const provider = new ethers.BrowserProvider(window.ethereum)
+    const accounts = await provider.send("eth_requestAccounts", [])
+    dispatch(loginUser(accounts[0]))
 }
 
 const OptimizeWording = (address: string) =>
 {
     const stringLength = address.length
-    return `${address.slice(0, 6)}...${address.slice(stringLength-5, stringLength) }`;
+    return address === '' ? '' : `${address.slice(0, 6)}...${address.slice(stringLength-5, stringLength) }`;
 }
 
 const Header = () =>  {
 
     const history = useHistory()
     const classes = useStyles()
+    const dispatch = useDispatch()
     const locationName = useLocation().pathname;
-    const [address, setAddress] = useState('');
-    const loginUser  = useSelector((state: RootState) => state.loginUser)
+    const loginUser = useSelector((state: RootState) => state.loginUser)
 
     return(
         <Grid container direction={'row'} className={classes.main} >
@@ -145,36 +137,19 @@ const Header = () =>  {
                                 <Grid container alignItems='center' justifyContent='flex-end'>
                                     <Grid item >
                                         {
-                                            _.keys(loginUser).length ===0 ? 
                                             <Grid container alignItems='center'>
                                                 <Grid item style={{marginRight:'6px'}}>
                                                     <Avatar style={{width:'30px',height:'30px'}}>
                                                     </Avatar>
                                                 </Grid>
                                                 <Grid item style={{marginRight:'8px'}}>
-                                                    <Typography style={{ color: '#98a1c0' }}>{OptimizeWording(address)}</Typography>
-                                                </Grid>
-                                            </Grid>
-                                            :
-                                            <Grid container alignItems='center'>
-                                                <Grid item style={{marginRight:'6px'}}>
-                                                    <Avatar style={{width:'44px',height:'44px'}} >
-                                                        <Folder />
-                                                    </Avatar>
-                                                </Grid>
-                                                <Grid item>
-                                                    <Typography style={{color:'#000'}}>{OptimizeWording(address)}</Typography>
-                                                </Grid>
-                                                <Grid item >
-                                                    <IconButton>
-                                                        <ArrowDropDownIcon style={{width:'20px',height:'20px',color:'#000'}}/>
-                                                    </IconButton>
+                                                    <Typography style={{ color: '#98a1c0' }}>{OptimizeWording(loginUser)}</Typography>
                                                 </Grid>
                                             </Grid>
                                         }
                                     </Grid>
                                     <Grid item style={{marginRight:'20px'}}>
-                                        <Button disableRipple className={classes.button} onClick={() => {  LoginWeb3(setAddress) }}>Connect</Button>
+                                        <Button disableRipple className={classes.button} onClick={() => {  ConnectWallet(loginUser,dispatch) }}>Connect</Button>
                                     </Grid>
                                 </Grid>
                             </Grid> 

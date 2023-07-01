@@ -3,5 +3,5 @@ pragma solidity ^0.8.10;
 
 abstract contract RewardModelInterface {
     bool public constant isRewardModel = true;
-    function getReward(uint against, uint agree, uint abstain) virtual internal view returns (uint);
+    function getReward(uint256[] memory against, uint256[] memory agree) virtual internal pure returns (uint256);
 }
