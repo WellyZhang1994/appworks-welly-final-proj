@@ -3,12 +3,21 @@ pragma solidity ^0.8.10;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { Ownable } from "openzeppelin/access/Ownable.sol";
 
+interface ITransToken {
+    function mint(address to, uint256 amount) external returns (bool);
+    function decimals() external returns (uint8);
+    function isMinter(address account) external view returns (bool);
+    function addMinter(address minter) external returns (bool);
+    function removeMinter(address minter) external returns (bool);
+    function getCurrentVotes(address voter) external view returns (uint256);
+    function addOnTickets(uint256 amount) external returns (bool);
+}
+
 contract TransToken is ERC20, Ownable{
     
     uint8 internal _decimals;
     mapping(address => bool) internal _minters;
     mapping (address => uint256) public tickets;
-    mapping (address => uint256) public allowanceOfTickets;
 
     constructor(string memory name, string memory symbol, uint8 decimalsValue) ERC20(name, symbol) {
         _minters[msg.sender] = true;
@@ -50,6 +59,10 @@ contract TransToken is ERC20, Ownable{
         return true;
     }    
 
+    function getCurrentVotes(address voter) external view returns (uint256) {
+        return tickets[voter];
+    }
+
     function addOnTickets(uint256 amount) public returns (bool){
         return _addOnTickets(msg.sender,amount);
     }
@@ -57,7 +70,6 @@ contract TransToken is ERC20, Ownable{
     function _addOnTickets(address delegator, uint256 amount) internal returns (bool){
         require(balanceOf(delegator) >= amount, "TransToken: the balance of delegator is not sufficient");
         tickets[delegator] += amount;
-        allowanceOfTickets[delegator] = balanceOf(delegator) -  amount;
         return true;
     }
 }
