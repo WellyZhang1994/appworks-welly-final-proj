@@ -31,12 +31,12 @@ contract CommentV1 is CommentGovernance{
         Completed
     }
 
-    uint private comment_count = 1;
-    mapping(string => bool) public isCompanyExist;
-    string[] public companyList;
-    mapping(string => mapping(uint256 => Comment)) public commentDetail;
-    mapping(string => Comment[]) public commentsByCompany;
-    mapping(uint256 => mapping(address => bool)) isVoted;
+    uint private _comment_count = 1;
+    mapping(string => bool) private _isCompanyExist;
+    string[] private _companyList;
+    mapping(string => mapping(uint256 => Comment)) private _commentDetail;
+    mapping(string => Comment[]) private _commentsByCompany;
+    mapping(uint256 => mapping(address => bool)) private _isVoted;
 
     ITransToken transToken;
 
@@ -50,7 +50,7 @@ contract CommentV1 is CommentGovernance{
         uint256[] memory agree;
         Comment memory tempCom = Comment(
             {   
-                id: comment_count,
+                id: _comment_count,
                 createTime: createTimestamp,
                 name: _name, 
                 description: _description, 
@@ -60,38 +60,50 @@ contract CommentV1 is CommentGovernance{
                 votes: CommentVotes(against, agree)
             }
         );
-
-        if(isCompanyExist[_name] == false)
+        _commentDetail[_name][_comment_count] = tempCom;
+        _comment_count ++;
+        
+        if(_isCompanyExist[_name] == false)
         {
-            isCompanyExist[_name] == true;
-            companyList.push(_name);
+            _isCompanyExist[_name] == true;
+            _companyList.push(_name);
         }
-        commentsByCompany[_name].push(tempCom);
-        commentDetail[_name][comment_count] = tempCom;
+        _commentsByCompany[_name].push(tempCom);
         _addVoting(tempCom.id);
-        comment_count ++;
+
     }
 
     function getCompanyList() external view returns (string[] memory){
-        return companyList;
+        return _companyList;
     }
 
     function getCommentsByConpany(string calldata _company) external view returns (Comment[] memory){
-        return commentsByCompany[_company];
+        return _commentsByCompany[_company];
+    }
+
+    function getCommentDetails(uint commentId, string calldata companyName) external view returns (Comment memory){
+        return _commentDetail[companyName][commentId];
     }
 
     function executeVotingReward(uint commentId, string calldata companyName) external returns(uint256) {
-        CommentVotes memory v = commentDetail[companyName][commentId].votes;
-        return _executeVotingResult(commentId, v.against, v.agree);
+        Comment memory com = _commentDetail[companyName][commentId];
+        require(com.status == Status.Voting, "CommentV1: executeVotingReward: comment is not in voting status!");
+        require(com.creator == msg.sender, "CommentV1: executeVotingReward: you are not the creator of this comment!");
+        CommentVotes memory v = com.votes;
+        uint256 reward = _executeVotingResult(commentId, v.against, v.agree);
+        if(reward > 0) {
+            transToken.mint(msg.sender, reward);
+        }
+        return reward;
     }
 
     function vote(uint commentId, string calldata companyName, VoteTypes voteTypes, uint256 amount) external {
-        require(isVoted[commentId][msg.sender] == false, "CommentV1: vote: you have voted!");
+        require(_isVoted[commentId][msg.sender] == false, "CommentV1: vote: you have voted!");
         require(transToken.getCurrentVotes(msg.sender) >= amount, "CommentV1: vote: you don't have enough votes!");
-        Comment storage comment = commentDetail[companyName][commentId];
+        Comment storage comment = _commentDetail[companyName][commentId];
         CommentVotes storage currentVotes = comment.votes;
         if(voteTypes == VoteTypes.Against) { currentVotes.against.push(amount); }
         if(voteTypes == VoteTypes.Agree) { currentVotes.agree.push(amount);}
-        isVoted[commentId][msg.sender] = true;
+        _isVoted[commentId][msg.sender] = true;
     }
 }

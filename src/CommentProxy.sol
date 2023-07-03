@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.10;
+import { Ownable } from "openzeppelin/access/Ownable.sol";
 
-contract CommentProxy {
+contract CommentProxy is Ownable {
     
     bytes32 constant private _SLOTADDRESS = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
     constructor(address _implementation) {
@@ -14,11 +15,11 @@ contract CommentProxy {
 
     receive() external payable {}
 
-    function upgradeTo(address _newImpl) public virtual {
+    function upgradeTo(address _newImpl) public virtual onlyOwner(){
         _setSlotToAddress(_SLOTADDRESS, _newImpl);
     }
 
-    function upgradeToAndCall(address _newImpl, bytes memory data) public virtual {
+    function upgradeToAndCall(address _newImpl, bytes memory data) public virtual onlyOwner{
         _setSlotToAddress(_SLOTADDRESS, _newImpl);
         (bool success, ) = _newImpl.delegatecall(data);
         require(success);
