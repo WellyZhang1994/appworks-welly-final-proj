@@ -31,7 +31,7 @@ contract CommentV1 is CommentGovernance{
         Completed
     }
 
-    uint private _comment_count = 1;
+    uint private _commentCount = 1;
     mapping(string => bool) private _isCompanyExist;
     string[] private _companyList;
     mapping(string => mapping(uint256 => Comment)) private _commentDetail;
@@ -50,7 +50,7 @@ contract CommentV1 is CommentGovernance{
         uint256[] memory agree;
         Comment memory tempCom = Comment(
             {   
-                id: _comment_count,
+                id: _commentCount,
                 createTime: createTimestamp,
                 name: _name, 
                 description: _description, 
@@ -60,8 +60,8 @@ contract CommentV1 is CommentGovernance{
                 votes: CommentVotes(against, agree)
             }
         );
-        _commentDetail[_name][_comment_count] = tempCom;
-        _comment_count ++;
+        _commentDetail[_name][_commentCount] = tempCom;
+        _commentCount ++;
         
         if(_isCompanyExist[_name] == false)
         {
@@ -92,7 +92,7 @@ contract CommentV1 is CommentGovernance{
         CommentVotes memory v = com.votes;
         uint256 reward = _executeVotingResult(commentId, v.against, v.agree);
         if(reward > 0) {
-            transToken.mint(msg.sender, reward);
+            transToken.mint(com.creator, reward);
         }
         return reward;
     }
@@ -105,5 +105,6 @@ contract CommentV1 is CommentGovernance{
         if(voteTypes == VoteTypes.Against) { currentVotes.against.push(amount); }
         if(voteTypes == VoteTypes.Agree) { currentVotes.agree.push(amount);}
         _isVoted[commentId][msg.sender] = true;
+        transToken.consumeTickets(msg.sender, amount);
     }
 }
