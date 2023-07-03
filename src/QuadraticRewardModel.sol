@@ -3,7 +3,7 @@ pragma solidity ^0.8.10;
 import "./RewardModelInterface.sol";
 
 contract QuadraticRewardModel is RewardModelInterface {
-    function getReward(uint256[] memory against, uint256[] memory agree) override internal pure returns (uint256) {
+    function _getReward(uint256[] memory against, uint256[] memory agree) override internal pure returns (uint256) {
         uint256 againstRewardSquare = 0;
         uint256 agreeRewardSquare = 0;
         for (uint256 i = 0; i < against.length; i++) {
