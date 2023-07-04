@@ -20,9 +20,10 @@ contract CommentScript is Script {
         CommentV1 commentsProxy;
         TransToken trans;
         trans = new TransToken("APPWELLY","AW",18);
-        comm = new CommentV1(address(trans));
+        comm = new CommentV1();
         proxy = new CommentProxy(address(comm));
         commentsProxy = CommentV1(address(proxy));
+        commentsProxy.initialize(address(trans));
         vm.stopBroadcast();
     }
 }

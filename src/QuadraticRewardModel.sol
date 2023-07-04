@@ -13,7 +13,7 @@ contract QuadraticRewardModel is RewardModelInterface {
             agreeRewardSquare += _sqrt(agree[i]);
         } 
         uint256 totalRewardSquare = agreeRewardSquare - againstRewardSquare;
-        return totalRewardSquare == 0 ? 0 : totalRewardSquare ** totalRewardSquare;
+        return totalRewardSquare == 0 ? 0 : totalRewardSquare ** 2;
     }
 
     function _sqrt(uint x) private pure returns (uint y) {

@@ -17,7 +17,7 @@ contract Timelock {
         queuedVoting[voteInfo.commentId] = voteInfo;
     }
 
-    function _isAbleExecuted(VotingInfo memory voteInfo) internal view returns (bool) {
+    function _executeable(VotingInfo memory voteInfo) internal view returns (bool) {
         require(getBlockTimestamp() >= voteInfo.createTime + DELAY, "Timelock: ");
         require(getBlockTimestamp() <= voteInfo.createTime + GRACE_PERIOD, "Timelock: ");
         return true;
