@@ -21,6 +21,11 @@ contract CommentV1 is CommentGovernance{
         uint256[] agree;
     }
 
+    struct CommentForView{
+        uint256 id;
+        string companyName;
+    }
+
     enum VoteTypes {
         Against,
         Agree
@@ -32,8 +37,9 @@ contract CommentV1 is CommentGovernance{
     }
 
     uint private _commentCount = 1;
-    mapping(string => bool) private _isCompanyExist;
     string[] private _companyList;
+    mapping(string => bool) private _isCompanyExist;
+    mapping(address => CommentForView[]) private _commentByAddress;
     mapping(string => mapping(uint256 => Comment)) private _commentDetail;
     mapping(string => Comment[]) private _commentsByCompany;
     mapping(uint256 => mapping(address => bool)) private _isVoted;
@@ -62,7 +68,7 @@ contract CommentV1 is CommentGovernance{
         );
         _commentDetail[_name][_commentCount] = tempCom;
         _commentCount ++;
-        
+        _commentByAddress[msg.sender].push(CommentForView(_commentCount, _name));
         if(_isCompanyExist[_name] == false)
         {
             _isCompanyExist[_name] == true;
@@ -81,6 +87,16 @@ contract CommentV1 is CommentGovernance{
         return _commentsByCompany[_company];
     }
 
+    function getCommentsByAddress(address owner) external view returns (Comment[] memory){
+        CommentForView[] memory commentView = _commentByAddress[owner];
+        Comment[] memory coms = new Comment[](commentView.length);
+        for(uint i=0; i< commentView.length; i++) {
+            Comment memory com = _commentDetail[commentView[i].companyName][commentView[i].id];
+            coms[i] = com;
+        }
+        return coms;
+    }
+
     function getCommentDetails(uint commentId, string calldata companyName) external view returns (Comment memory){
         return _commentDetail[companyName][commentId];
     }
@@ -94,6 +110,7 @@ contract CommentV1 is CommentGovernance{
         if(reward > 0) {
             transToken.mint(com.creator, reward);
         }
+        _commentDetail[companyName][commentId].status = Status.Completed;
         return reward;
     }
 
