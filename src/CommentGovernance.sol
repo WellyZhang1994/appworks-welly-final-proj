@@ -17,11 +17,11 @@ contract CommentGovernance is Timelock, QuadraticRewardModel{
         _addVotingQueue(voteInfo);
     }
 
-    function _executeVotingResult(uint commentId, uint256[] memory against, uint256[] memory agree) internal returns(uint256){
+    function _claimResult(uint commentId, uint256[] memory against, uint256[] memory agree) internal returns(uint256){
         uint256 reward = 0;
         require(_votes[commentId].isExecute == false, "CommentGovernance: execute: the voting is executed!");
         _votes[commentId].isExecute = true;
-        bool canExecute = _isAbleExecuted(_votes[commentId]);
+        bool canExecute = _executeable(_votes[commentId]);
         if (canExecute) {
             reward = _getReward(against, agree);
         }

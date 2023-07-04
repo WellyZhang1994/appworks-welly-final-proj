@@ -36,7 +36,8 @@ contract CommentV1 is CommentGovernance{
         Completed
     }
 
-    uint private _commentCount = 1;
+    address private transTokenAddress;
+    uint256 private _commentCount = 0;
     string[] private _companyList;
     mapping(string => bool) private _isCompanyExist;
     mapping(address => CommentForView[]) private _commentByAddress;
@@ -44,10 +45,8 @@ contract CommentV1 is CommentGovernance{
     mapping(string => Comment[]) private _commentsByCompany;
     mapping(uint256 => mapping(address => bool)) private _isVoted;
 
-    ITransToken transToken;
-
-    constructor(address _transToken) {
-        transToken = ITransToken(_transToken);
+    function initialize(address _tokenAddress) external{
+        transTokenAddress = _tokenAddress;
     }
 
     function createComment(string calldata _name, string calldata _description, uint _salary)  external {
@@ -83,7 +82,7 @@ contract CommentV1 is CommentGovernance{
         return _companyList;
     }
 
-    function getCommentsByConpany(string calldata _company) external view returns (Comment[] memory){
+    function getCommentsByCompany(string calldata _company) external view returns (Comment[] memory){
         return _commentsByCompany[_company];
     }
 
@@ -101,14 +100,14 @@ contract CommentV1 is CommentGovernance{
         return _commentDetail[companyName][commentId];
     }
 
-    function executeVotingReward(uint commentId, string calldata companyName) external returns(uint256) {
+    function claimVotingReward(uint commentId, string calldata companyName) external returns(uint256) {
         Comment memory com = _commentDetail[companyName][commentId];
-        require(com.status == Status.Voting, "CommentV1: executeVotingReward: comment is not in voting status!");
-        require(com.creator == msg.sender, "CommentV1: executeVotingReward: you are not the creator of this comment!");
+        require(com.status == Status.Voting, "CommentV1: claimVotingReward: comment is not in voting status!");
+        require(com.creator == msg.sender, "CommentV1: claimVotingReward: you are not the creator of this comment!");
         CommentVotes memory v = com.votes;
-        uint256 reward = _executeVotingResult(commentId, v.against, v.agree);
+        uint256 reward = _claimResult(commentId, v.against, v.agree);
         if(reward > 0) {
-            transToken.mint(com.creator, reward);
+            ITransToken(transTokenAddress).mint(com.creator, reward);
         }
         _commentDetail[companyName][commentId].status = Status.Completed;
         return reward;
@@ -116,12 +115,12 @@ contract CommentV1 is CommentGovernance{
 
     function vote(uint commentId, string calldata companyName, VoteTypes voteTypes, uint256 amount) external {
         require(_isVoted[commentId][msg.sender] == false, "CommentV1: vote: you have voted!");
-        require(transToken.getCurrentVotes(msg.sender) >= amount, "CommentV1: vote: you don't have enough votes!");
+        require(ITransToken(transTokenAddress).getCurrentVotes(msg.sender) >= amount, "CommentV1: vote: you don't have enough votes!");
         Comment storage comment = _commentDetail[companyName][commentId];
         CommentVotes storage currentVotes = comment.votes;
         if(voteTypes == VoteTypes.Against) { currentVotes.against.push(amount); }
         if(voteTypes == VoteTypes.Agree) { currentVotes.agree.push(amount);}
         _isVoted[commentId][msg.sender] = true;
-        transToken.consumeTickets(msg.sender, amount);
+        ITransToken(transTokenAddress).consumeTickets(msg.sender, amount);
     }
 }

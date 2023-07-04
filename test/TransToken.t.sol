@@ -9,6 +9,7 @@ contract TransTokenTest is Test {
     TransToken public trans;
     address _admin = makeAddr("admin");
     address _user1 = makeAddr("user1");
+    address _user2 = makeAddr("user2");
 
     function setUp() public {
         vm.startPrank(_admin);
@@ -20,7 +21,51 @@ contract TransTokenTest is Test {
         vm.startPrank(_admin);
         trans.mint(_user1,1e18);
         vm.stopPrank();        
-
         assertEq(trans.balanceOf(_user1), 1e18);
+    }
+
+    function testOwnerIsMinter() public {
+        assertEq(trans.isMinter(_admin), true);
+    }
+    
+    function testTicketUsage() public {
+        vm.startPrank(_admin);
+        trans.mint(_user1, 1e18);
+        vm.stopPrank();
+
+        vm.startPrank(_user1);
+        trans.addOnTickets(10000);
+        vm.stopPrank(); 
+        assertEq(trans.getCurrentVotes(_user1),10000);
+
+        vm.startPrank(_admin);
+        trans.consumeTickets(_user1, 10000);
+        vm.stopPrank(); 
+
+        assertEq(trans.getCurrentVotes(_user1),0);
+    }
+
+    function testDeposit() public {
+        deal(_user1, 1 ether);
+        vm.startPrank(_user1);
+        trans.deposit{ value: 1 ether }();
+        vm.stopPrank(); 
+        assertEq(trans.balanceOf(_user1), 1 ether);
+    }
+
+    function testAddAndRemoveMinter() public {
+        vm.startPrank(_admin);
+        trans.addAllower(_user1);
+        vm.stopPrank();
+
+        vm.startPrank(_user1);
+        trans.mint(_admin, 1e18);
+        vm.stopPrank();
+        assertEq(trans.balanceOf(_admin), 1e18);
+
+        vm.startPrank(_user2);
+        vm.expectRevert("TransToken: caller is not a allower");
+        trans.mint(_admin, 1e18);
+        vm.stopPrank();
     }
 }
