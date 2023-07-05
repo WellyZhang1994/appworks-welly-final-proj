@@ -36,7 +36,7 @@ contract CommentV1 is CommentGovernance{
         Completed
     }
 
-    address private transTokenAddress;
+    address private _transTokenAddress;
     uint256 private _commentCount = 0;
     string[] private _companyList;
     mapping(string => bool) private _isCompanyExist;
@@ -46,7 +46,8 @@ contract CommentV1 is CommentGovernance{
     mapping(uint256 => mapping(address => bool)) private _isVoted;
 
     function initialize(address _tokenAddress) external{
-        transTokenAddress = _tokenAddress;
+        require(_transTokenAddress == address(0), "CommentV1: initialize: already initialized!");
+        _transTokenAddress = _tokenAddress;
     }
 
     function createComment(string calldata _name, string calldata _description, uint _salary)  external {
@@ -107,7 +108,7 @@ contract CommentV1 is CommentGovernance{
         CommentVotes memory v = com.votes;
         uint256 reward = _claimResult(commentId, v.against, v.agree);
         if(reward > 0) {
-            ITransToken(transTokenAddress).mint(com.creator, reward);
+            ITransToken(_transTokenAddress).mint(com.creator, reward);
         }
         _commentDetail[companyName][commentId].status = Status.Completed;
         return reward;
@@ -115,12 +116,12 @@ contract CommentV1 is CommentGovernance{
 
     function vote(uint commentId, string calldata companyName, VoteTypes voteTypes, uint256 amount) external {
         require(_isVoted[commentId][msg.sender] == false, "CommentV1: vote: you have voted!");
-        require(ITransToken(transTokenAddress).getCurrentVotes(msg.sender) >= amount, "CommentV1: vote: you don't have enough votes!");
+        require(ITransToken(_transTokenAddress).getCurrentVotes(msg.sender) >= amount, "CommentV1: vote: you don't have enough votes!");
         Comment storage comment = _commentDetail[companyName][commentId];
         CommentVotes storage currentVotes = comment.votes;
         if(voteTypes == VoteTypes.Against) { currentVotes.against.push(amount); }
         if(voteTypes == VoteTypes.Agree) { currentVotes.agree.push(amount);}
         _isVoted[commentId][msg.sender] = true;
-        ITransToken(transTokenAddress).consumeTickets(msg.sender, amount);
+        ITransToken(_transTokenAddress).consumeTickets(msg.sender, amount);
     }
 }
