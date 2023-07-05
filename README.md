@@ -23,10 +23,7 @@
 	forge script script/Comment.s.sol:CommentScript --broadcast  --rpc-url http://127.0.0.1:8545 
 	```
 	Sepolia
-    proxy contract address: 0xbfa04031baCC27EfF5E10fa335EC715a95455087
-    comment implementation contract address: 0x505EAfeD53f42669c957a0809cC260D96B09E84c
-    token contract address: 0xB4821e134710efFC3c9484Bab164732A11eEb338
-    
+  
     modify .env.example to .env
     ```
     ETHERSCAN_API_KEY=[your_etherscan_api_key]
