@@ -15,7 +15,8 @@ import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
 import _ from 'lodash'
 import EmailIcon from '@mui/icons-material/Email';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
-import commentContract from '../../contracts/commentAbi';
+import { commentAbi, commentProxyAddress } from '../../contracts/comment';
+import { transTokenABI, transTokenAddress } from '../../contracts/transToken';
 import { ethers } from "ethers";
 
 interface Props {
@@ -83,17 +84,12 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
     const themeSelected :string = useSelector((state: RootState) => state.themeSelected)
     const dispatch = useDispatch()
     const loginUser = useSelector((state: RootState) => state.loginUser)
-    const tokenAddress = '0x0Cd698BF94dE7c43Ba6dB1E6Fa37D9005223258f'
-    const commentProxyAddress = '0xFb50dCC6ccd62b996B1F69F1837718c19045DaBF'
-
-
-    console.log(commentContract)
 
     const createComments = async () =>
     {
         const provider = new ethers.BrowserProvider(window.ethereum)
         const signer = await provider.getSigner()
-        const commentContractInstance = new ethers.Contract(commentProxyAddress, commentContract, signer)
+        const commentContractInstance = new ethers.Contract(commentProxyAddress, commentAbi, signer)
         const transaction = await commentContractInstance.createComment("first company", "test", 10000)
         const transactionReceipt = await transaction.wait();
         if (transactionReceipt.status !== 1) {
@@ -112,14 +108,14 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                 
                 const provider = new ethers.BrowserProvider(window.ethereum)
                 const signer = await provider.getSigner()
-                const commentContractInstance = new ethers.Contract(commentProxyAddress, commentContract, signer)
+                const commentContractInstance = new ethers.Contract(commentProxyAddress, commentAbi, signer)
                 const result = await commentContractInstance.getCompanyList();
                 result.map((x:any) =>
                 {
                     console.log(x)
                 })
 
-                const resultv2 = await commentContractInstance.getCommentsByConpany('first company');
+                const resultv2 = await commentContractInstance.getCommentsByCompany('first company');
                 resultv2.map((x: any) =>
                 {
                     console.log(x['1'])

@@ -67,7 +67,6 @@ contract CommentV1 is CommentGovernance{
             }
         );
         _commentDetail[_name][_commentCount] = tempCom;
-        _commentCount ++;
         _commentByAddress[msg.sender].push(CommentForView(_commentCount, _name));
         if(_isCompanyExist[_name] == false)
         {
@@ -76,7 +75,7 @@ contract CommentV1 is CommentGovernance{
         }
         _commentsByCompany[_name].push(tempCom);
         _addVoting(tempCom.id);
-
+        _commentCount ++;
     }
 
     function getCompanyList() external view returns (string[] memory){
