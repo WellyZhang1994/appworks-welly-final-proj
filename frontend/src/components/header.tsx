@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux'
 import { useHistory, useLocation } from "react-router-dom";
 import { RootState } from '../reducers/index'
@@ -22,6 +22,7 @@ import _ from 'lodash'
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
 import TextField from '@mui/material/TextField';
 import { ethers } from "ethers";
+import { transTokenABI, transTokenAddress } from '../contracts/transToken';
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -81,7 +82,27 @@ const Header = () =>  {
     const dispatch = useDispatch()
     const locationName = useLocation().pathname;
     const loginUser = useSelector((state: RootState) => state.loginUser)
+    const [balance, setBalance] = React.useState<number>(0);
+    const [votes, setVotes] = React.useState<number>(0);
 
+    useEffect(() =>
+    {
+        if (!_.isEmpty((window as any).ethereum) && loginUser !== '')
+        {
+            const init = async () =>
+            {
+                const provider = new ethers.BrowserProvider(window.ethereum)
+                const signer = await provider.getSigner()
+                const tokenInstance = new ethers.Contract(transTokenAddress, transTokenABI, signer)
+                const balance = await tokenInstance.balanceOf(loginUser)
+                const vote = await tokenInstance.getCurrentVotes(loginUser);
+                setBalance(Number(ethers.formatUnits(balance, 18)))
+                setVotes(Number(ethers.formatUnits(vote, 18)))
+            }
+            init()
+        }
+    }, [loginUser])
+    
     return(
         <Grid container direction={'row'} className={classes.main} >
             <Grid item style={{width:'100%'}}>
@@ -107,6 +128,16 @@ const Header = () =>  {
                             </Grid>
                             <Grid item lg={4} md={4}>
                                 <Grid container alignItems='center' justifyContent='flex-end'>
+                                    <Grid item>
+                                        <Typography style={{ color: '#98a1c0' }}>
+                                            {`Balance: ${balance}`}
+                                        </Typography>
+                                    </Grid>
+                                    <Grid item style={{marginLeft:'10px', marginRight:'10px'}}>
+                                        <Typography style={{ color: '#98a1c0' }}>
+                                            {`Votes: ${votes}`}
+                                        </Typography>
+                                    </Grid>
                                     <Grid item >
                                         {
                                             <Grid container alignItems='center'>
