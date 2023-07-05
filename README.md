@@ -16,5 +16,51 @@
 ![flowchart](https://storage.googleapis.com/appworks_final_project/flowcharts.png)
 
 #### Development
+- Contract
+	Local Environment
+	```
+	anvil
+	forge script script/Comment.s.sol:CommentScript --broadcast  --rpc-url http://127.0.0.1:8545 
+	```
+	Sepolia
+    proxy contract address: 0xbfa04031baCC27EfF5E10fa335EC715a95455087
+    comment implementation contract address: 0x505EAfeD53f42669c957a0809cC260D96B09E84c
+    token contract address: 0xB4821e134710efFC3c9484Bab164732A11eEb338
+    
+    modify .env.example to .env
+    ```
+    ETHERSCAN_API_KEY=[your_etherscan_api_key]
+    PRIVATE_KEY=[your_private_key]
+    ```
+    execute forge script to deploy contract on Sepolia testnet
+	```
+	forge script script/Comment.s.sol:CommentScript --broadcast --verify --rpc-url https://eth-sepolia.g.alchemy.com/v2/{api_key} 
+	```
+- Frontend
+	Local Environment
+	```
+	cd ./frontend
+	yarn install
+	yarn start 
+	```
+	Container
+	```
+	docker build -t "image_name" .
+	docker run --name={container_name} -it -d -p 80:80 image_name:latest
+	```	
 #### Testing
++ Comment.t.sol
+  - testProxiable()
+  - testVoting()
+  - testClaimVotingReward()
+  - testCreateComment()
+  - testGetCommentDetails()
+  - testGetCommentsByAddress()
+  - testGetCommentsByCompany()
++ TransToken.t.sol
+  - testAddAndRemoveMinter()
+  - testDeposit()
+  - testMintByOwner()
+  - testOwnerIsMinter()
+  - testTicketUsage()
 #### Usage
