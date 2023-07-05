@@ -98,40 +98,12 @@ const Header = () =>  {
                                             <Grid item style={{marginRight:'20px'}}>
                                                 <Button disableRipple className={classes.button} onClick={()=> history.push('/company')} >Company</Button>
                                             </Grid>
-                                            <Grid item style={{marginRight:'20px'}}>
-                                                <Button disableRipple className={classes.button} onClick={()=> history.push('/about')}>About Us</Button>
-                                            </Grid> 
                                         </Grid>
                                     </Grid>
                                 </Grid>
                             </Grid>
                             <Grid item lg={4} md={4} >
-                                <TextField
-                                    placeholder='Search'
-                                    variant={'outlined'}
-                                    className={classes.serachInput}
-                                    InputProps={{
-                                        type: 'search',
-                                        style: {
-                                            height:'34px',
-                                            fontSize:'16px',
-                                            width:'450px',
-                                            backgroundColor: '#1d2c52',
-                                            color: '#98a1c0',
-                                            padding: '0 0 0 10px',
-                                            borderRadius: 24
-                                        },
-                                        classes: {
-                                            notchedOutline: classes.selectBorder
-                                        },
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <SearchIcon style={{ color: '#98a1c0' }} />
-                                            </InputAdornment>
-                                        ),
-                                    }}
-                                    size="small"
-                                />
+                                
                             </Grid>
                             <Grid item lg={4} md={4}>
                                 <Grid container alignItems='center' justifyContent='flex-end'>

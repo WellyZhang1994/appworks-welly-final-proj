@@ -70,7 +70,7 @@ contract CommentV1 is CommentGovernance{
         _commentByAddress[msg.sender].push(CommentForView(_commentCount, _name));
         if(_isCompanyExist[_name] == false)
         {
-            _isCompanyExist[_name] == true;
+            _isCompanyExist[_name] = true;
             _companyList.push(_name);
         }
         _commentsByCompany[_name].push(tempCom);
