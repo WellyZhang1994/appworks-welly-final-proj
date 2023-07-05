@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux'
 import { useHistory } from "react-router-dom";
 import { RootState } from '../../reducers/index'
@@ -16,7 +16,6 @@ import _ from 'lodash'
 import EmailIcon from '@mui/icons-material/Email';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { commentAbi, commentProxyAddress } from '../../contracts/comment';
-import { transTokenABI, transTokenAddress } from '../../contracts/transToken';
 import NativeSelect from '@mui/material/NativeSelect';
 import MenuItem from '@mui/material/MenuItem';
 import { ethers } from "ethers";
@@ -28,6 +27,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
+import LoadingOverlay from 'react-loading-overlay-ts';
 
 interface Props {
     children: JSX.Element | JSX.Element[];
@@ -45,10 +45,13 @@ const useStyles = makeStyles((theme: Theme) =>
         mainContainer: {
             borderRadius:10,
             padding: '40px 50px',
-            height: '570px',
+            height: '100%',
             width: '700px',
             backgroundColor: '#FFF',
-            boxShadow: '0px 0px 20px rgba(0, 115, 250, 0.1)'
+            boxShadow: '0px 0px 20px rgba(0, 115, 250, 0.1)',
+            overflow: "auto",
+            whiteSpace: "nowrap",
+            position: 'relative'
         },
         loginWord: {
             fontSize:'20px',
@@ -102,13 +105,50 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
     const [companyName, setCompanyName] = React.useState('');
     const [companyDescription, setCompanyDescription] = React.useState('');
     const [userSalary, setUserSalary] = React.useState(0);
+
+    const [detailOpen, setDetailOpen] = React.useState(false);
+    const [companyDetail, setCompanyDetail] = React.useState<any>({});
+    const [votes, setVotes] = React.useState(0);
     
+    const [isLoading, setIsLoading] = useState(false)
+
     const handleClickOpen = () => {
         setDigOpen(true);
     };
     const handleClose = () => {
         setDigOpen(false);
     };
+
+    const handleDetailClickOpen = async(id: number, name:string) =>
+    {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const signer = await provider.getSigner()
+        const commentContractInstance = new ethers.Contract(commentProxyAddress, commentAbi, signer)
+        const comment = await commentContractInstance.getCommentDetails(id, name)
+        if (comment)
+        {
+            const votes = {
+                'agree': _.values(comment['7']['1']),
+                'against': _.values(comment['7']['0'])
+            }
+            const tempResult = {
+                id: Number(comment['0']),
+                salary: ethers.formatUnits(comment['1'], 0),
+                createTime: new Date(Number(comment['2']) * 1000),
+                name: comment['3'],
+                description: comment['4'],
+                creator: comment['5'],
+                status: ethers.formatUnits(comment['6'], 0),
+                votes: votes
+            }
+            setCompanyDetail(tempResult)
+            setDetailOpen(true);
+        }
+
+    };
+    const handleDetailClose = () => {
+        setDetailOpen(false);
+    };    
 
     const createComments = async (companyName: string, companyDescription: string, userSalary: number) =>
     {
@@ -122,6 +162,8 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
         return;
         }
         console.log(transactionReceipt)
+        handleClose();
+        setIsLoading(false)
         getCompanyList()
     }
 
@@ -131,25 +173,28 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
         const signer = await provider.getSigner()
         const commentContractInstance = new ethers.Contract(commentProxyAddress, commentAbi, signer)
         const result = await commentContractInstance.getCompanyList();
-        setCompanyList(result)
-
-        const resultv2 = await commentContractInstance.getCommentsByCompany(result[0]);
-        const commentList:any = resultv2.map((comment: any) =>
+        if (result.length > 0)
         {
-            const tempResult = {
-                id: Number(comment['0']),
-                salary: ethers.formatUnits(comment['1'], 0),
-                createTime: new Date(Number(comment['2'])),
-                name: comment['3'],
-                description: comment['4'],
-                creator: comment['5'],
-                status: ethers.formatUnits(comment['6'], 0),
-                votes: comment['7']
-            }
-            return tempResult;
-        })
-        setCommentListByCompany(commentList);
-        return commentList;
+            setCompanyList(result)
+            const resultv2 = await commentContractInstance.getCommentsByCompany(result[0]);
+            const commentList:any = resultv2.map((comment: any) =>
+            {
+                const tempResult = {
+                    id: Number(comment['0']),
+                    salary: ethers.formatUnits(comment['1'], 0),
+                    createTime: new Date(Number(comment['2']) * 1000),
+                    name: comment['3'],
+                    description: comment['4'],
+                    creator: comment['5'],
+                    status: ethers.formatUnits(comment['6'], 0),
+                    votes: comment['7']
+                }
+                return tempResult;
+            })
+            setCommentListByCompany(commentList);
+            return commentList;
+        }
+
     }
 
     const getCompanyByComapany = async (companyName: string) =>
@@ -163,7 +208,7 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
             const tempResult = {
                 id: Number(comment['0']),
                 salary: ethers.formatUnits(comment['1'], 0),
-                createTime: new Date(Number(comment['2'])),
+                createTime: new Date(Number(comment['2']) * 1000),
                 name: comment['3'],
                 description: comment['4'],
                 creator: comment['5'],
@@ -174,6 +219,33 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
         })
         setCommentListByCompany(commentList);
         return commentList;
+    }
+
+    const commentVotes = async (id: number, name: string, vote: number, amount: number) =>
+    { 
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const signer = await provider.getSigner()
+        const commentContractInstance = new ethers.Contract(commentProxyAddress, commentAbi, signer)
+        try
+        {
+            const transaction = await commentContractInstance.vote(id, name, vote, amount)
+            const transactionReceipt = await transaction.wait();
+            if (transactionReceipt.status !== 1) {
+                alert('error message');
+            return;
+            }
+            setIsLoading(false)
+            setVotes(0)
+            setDetailOpen(false)
+            
+        }
+        catch (error)
+        {
+            setIsLoading(false)
+            setVotes(0)
+            setDetailOpen(false)
+        }
+
     }
     
     useEffect(() =>
@@ -187,10 +259,10 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
             init()
         }
     }, [loginUser])
-
+    
     return (
         <Grid container direction='column' justifyContent='center' alignItems='center' className={classes.main}>
-            <Grid container direction='column' className={classes.mainContainer}>
+            <Grid container direction='column' className={classes.mainContainer} >
                 <Grid item container justifyContent='flex-start' alignContent='center'>
                     <Grid item style={{marginRight:'20px'}}>
                          <Typography className={classes.loginWord}>
@@ -218,7 +290,7 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                         </NativeSelect>
                     </Grid>
                 </Grid>
-                <Grid item container justifyContent='space-between' alignContent='center'>
+                <Grid item container justifyContent='space-between' alignContent='center' >
                     <Grid item>
                          <Typography className={classes.loginWord}>
                             {"Comments"}
@@ -232,55 +304,61 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                         </Button>
                         <Dialog open={digOpen} onClose={handleClose}>
                             <DialogTitle>Create Comment</DialogTitle>
-                            <DialogContent>
-                            <DialogContentText>
-                                Please input company name, description and salary.
-                            </DialogContentText>
-                            <TextField
-                                    autoFocus
-                                    margin="dense"
-                                    id="name"
-                                    label="Company Name"
-                                    type="text"
-                                    value={companyName}  
-                                    onChange={(event)=> setCompanyName(event.target.value)}
-                                    fullWidth
-                                    variant="standard"
-                                />
-                            <TextField
-                                margin="dense"
-                                id="name"
-                                label="Comapny Description"
-                                type="text"
-                                value={companyDescription}
-                                onChange={(event)=> setCompanyDescription(event.target.value)}
-                                fullWidth
-                                variant="standard"
-                                />
-                            <TextField
-                                margin="dense"
-                                id="name"
-                                label="Salary"
-                                type="number"
-                                value={userSalary}
-                                onChange={(event)=> setUserSalary(parseFloat(event.target.value))}
-                                fullWidth
-                                variant="standard"
-                            />
-                            </DialogContent>
-                            <DialogActions>
-                            <Button onClick={handleClose}>Cancel</Button>
-                                <Button onClick={() => { createComments(companyName, companyDescription, userSalary);  handleClose();}}>Create</Button>
-                            </DialogActions>
+                                <LoadingOverlay
+                                    active={isLoading}
+                                    spinner
+                                    text='Creating Comment...'
+                                >
+                                <DialogContent>
+                                    <DialogContentText>
+                                        Please input company name, description and salary.
+                                    </DialogContentText>
+                                    <TextField
+                                        autoFocus
+                                        margin="dense"
+                                        id="name"
+                                        label="Company Name"
+                                        type="text"
+                                        value={companyName}  
+                                        onChange={(event)=> setCompanyName(event.target.value)}
+                                        fullWidth
+                                        variant="standard"
+                                    />
+                                    <TextField
+                                        margin="dense"
+                                        id="name"
+                                        label="Comapny Description"
+                                        type="text"
+                                        value={companyDescription}
+                                        onChange={(event)=> setCompanyDescription(event.target.value)}
+                                        fullWidth
+                                        variant="standard"
+                                        />
+                                    <TextField
+                                        margin="dense"
+                                        id="name"
+                                        label="Salary"
+                                        type="number"
+                                        value={userSalary}
+                                        onChange={(event)=> setUserSalary(parseFloat(event.target.value))}
+                                        fullWidth
+                                        variant="standard"
+                                    />
+                                 </DialogContent>
+                                <DialogActions>
+                                    <Button onClick={handleClose}>Cancel</Button>
+                                    <Button onClick={() => { setIsLoading(true); createComments(companyName, companyDescription, userSalary); }}>Create</Button>
+                                </DialogActions>
+                            </LoadingOverlay>
                         </Dialog>
                     </Grid>
                 </Grid>
-                <Grid item container style={{marginTop:'20px'}} direction='column' alignContent='flex-start'>
+                <Grid item container direction='column' alignContent='flex-start' >
                     {
                         commentListByCompany.map((comment: any) =>
                         {
                             return (
-                                <Card key={comment.id }  style={{ width: '100%' }}>
+                                <Card key={comment.id }  style={{ width: '100%', marginTop:'20px' }}>
                                     <Grid container direction='column'>
                                         <Grid item container justifyContent='space-between'>
                                             <Grid item>
@@ -314,11 +392,64 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                                                 </CardContent>
                                             </Grid>
                                         </Grid>
+                                        <Grid item container justifyContent='flex-end'>
+                                            <Grid item>
+                                                <CardActions>
+                                                    <Button style={{ backgroundColor: '#98a1c0' }} size="small" onClick={()=> handleDetailClickOpen(comment.id, comment.name)}>
+                                                        <Typography style={{color:'#FFF'}}>
+                                                            {'Detail'}
+                                                        </Typography>
+                                                    </Button>
+                                                    <Dialog open={detailOpen} onClose={handleDetailClose}>
+                                                        <DialogTitle>Comment Details</DialogTitle>
+                                                            <LoadingOverlay
+                                                                    active={isLoading}
+                                                                    spinner
+                                                                    text='Voting...'
+                                                            >
+                                                                <DialogContent>
+                                                                    <DialogContentText>
+                                                                        {`Company Name: ${companyDetail?.name}`}
+                                                                    </DialogContentText>
+                                                                    <DialogContentText>
+                                                                        {`Company Description: ${companyDetail?.description}`}
+                                                                    </DialogContentText>
+                                                                    <DialogContentText>
+                                                                        {`Company Salary: ${companyDetail?.salary}`}
+                                                                    </DialogContentText>
+                                                                    <DialogContentText>
+                                                                        {`Creator: ${companyDetail?.creator}`}
+                                                                    </DialogContentText>
+                                                                    <DialogContentText>
+                                                                        {`Agree: ${companyDetail?.votes?.agree}`}
+                                                                    </DialogContentText>
+                                                                    <DialogContentText>
+                                                                        {`Against: ${companyDetail?.votes?.against}`}
+                                                                    </DialogContentText>
+                                                                </DialogContent>
+                                                                <DialogActions>
+                                                                    <Typography style={{marginRight:'10px'}}>
+                                                                        {'投票'}
+                                                                    </Typography>
+                                                                    <TextField
+                                                                        margin="dense"
+                                                                        id="name"
+                                                                        type="number"
+                                                                        value={votes}
+                                                                        onChange={(event)=> setVotes(parseFloat(event.target.value))}
+                                                                        fullWidth
+                                                                        variant="standard"
+                                                                        style={{width:'140px'}}
+                                                                    />
+                                                                    <Button onClick={() => { setIsLoading(true); commentVotes(companyDetail?.id, companyDetail?.name, 1, votes) }}>Agree</Button>
+                                                                    <Button onClick={() => { setIsLoading(true); commentVotes(companyDetail?.id, companyDetail?.name, 0, votes) }}>Against</Button>
+                                                                </DialogActions>
+                                                            </LoadingOverlay>
+                                                        </Dialog>
+                                                </CardActions>
+                                            </Grid>
+                                        </Grid>
                                     </Grid>
-                                   
-                                    <CardActions>
-                                        <Button size="small">Detail</Button>
-                                    </CardActions>
                                 </Card>
                             )
                         })
