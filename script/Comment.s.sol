@@ -13,8 +13,12 @@ import { Timelock } from "../src/Timelock.sol";
 contract CommentScript is Script {
     function setUp() public {}
 
+    //sepolia proxy contract address: 0xbfa04031baCC27EfF5E10fa335EC715a95455087
+    //sepolia comment implementation contract address: 0x505EAfeD53f42669c957a0809cC260D96B09E84c
+    //sepolia token contract address: 0xB4821e134710efFC3c9484Bab164732A11eEb338
+
     function run() public {
-        vm.startBroadcast();
+        vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
         CommentV1 comm;
         CommentProxy proxy;
         CommentV1 commentsProxy;
@@ -24,6 +28,7 @@ contract CommentScript is Script {
         proxy = new CommentProxy(address(comm));
         commentsProxy = CommentV1(address(proxy));
         commentsProxy.initialize(address(trans));
+        trans.addAllower(address(commentsProxy));
         vm.stopBroadcast();
     }
 }
