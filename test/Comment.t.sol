@@ -75,11 +75,13 @@ contract TransTokenTest is Test {
         vm.startPrank(_user2);
         trans.deposit{value: 1e18}();
         trans.addOnTickets(1e18);
+        assertEq(trans.getCurrentVotes(_user2),1e18);
         CommentV1.Comment memory result = commentsProxy.getCommentDetails(0,"test");
         commentsProxy.vote(result.id, result.name, CommentV1.VoteTypes.Agree , 1e18);
         vm.stopPrank();
         CommentV1.Comment memory finalResult = commentsProxy.getCommentDetails(0,"test");
         assertEq(finalResult.votes.agree[0], 1e18);
+        assertEq(trans.getCurrentVotes(_user2),0);
     }
 
     function testClaimVotingReward() public {
@@ -91,7 +93,9 @@ contract TransTokenTest is Test {
         trans.deposit{value: 1e18}();
         trans.addOnTickets(1e18);
         CommentV1.Comment memory result = commentsProxy.getCommentDetails(0,"test");
+        assertEq(trans.getCurrentVotes(_user2), 1e18);
         commentsProxy.vote(result.id, result.name, CommentV1.VoteTypes.Agree , 1e18);
+        assertEq(trans.getCurrentVotes(_user2), 0);
         vm.stopPrank();
 
         vm.startPrank(_user1);  
@@ -99,5 +103,18 @@ contract TransTokenTest is Test {
         uint256 reward = commentsProxy.claimVotingReward(0,"test");
         vm.stopPrank();
         assertEq(trans.balanceOf(_user1) , reward);
+    }
+
+    function testCommentExecutable() public {
+        vm.startPrank(_user1);
+        commentsProxy.createComment("test", "test", 100);
+        vm.stopPrank();
+        vm.expectRevert("Timelock: cannot execute during delay period!");
+        assertEq(commentsProxy.executeable(0), false);
+        vm.warp(block.timestamp + 1 days);
+        assertEq(commentsProxy.executeable(0), true);
+        vm.warp(block.timestamp + 7 days);
+        vm.expectRevert("Timelock: cannot execute after grace period!");
+        assertEq(commentsProxy.executeable(0), false);
     }
 }

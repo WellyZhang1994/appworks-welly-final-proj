@@ -10,6 +10,7 @@ contract TransTokenTest is Test {
     address _admin = makeAddr("admin");
     address _user1 = makeAddr("user1");
     address _user2 = makeAddr("user2");
+    address _user3 = makeAddr("user3");
 
     function setUp() public {
         vm.startPrank(_admin);
@@ -53,7 +54,7 @@ contract TransTokenTest is Test {
         assertEq(trans.balanceOf(_user1), 1 ether);
     }
 
-    function testAddAndRemoveMinter() public {
+    function testCheckMinter() public {
         vm.startPrank(_admin);
         trans.addAllower(_user1);
         vm.stopPrank();
@@ -68,4 +69,25 @@ contract TransTokenTest is Test {
         trans.mint(_admin, 1e18);
         vm.stopPrank();
     }
+
+    function testNumCheckpoints() public {
+        deal(_user1, 1e18);
+        vm.startPrank(_user1);
+        trans.deposit{ value: 1e18 }();
+        trans.addOnTickets(1e18);
+        assertEq(trans.numCheckpoints(_user1), 1);
+        vm.stopPrank(); 
+    }
+
+    function testVotesCount() public {
+        deal(_user1, 1e18);
+        vm.startPrank(_user1);
+        trans.deposit{ value: 1e18 }();
+        trans.addOnTickets(1e2);
+        assertEq(trans.getCurrentVotes(_user1), 1e2);
+        trans.addOnTickets(2e2);
+        assertEq(trans.getCurrentVotes(_user1), 3e2);
+        vm.stopPrank(); 
+    }
+
 }

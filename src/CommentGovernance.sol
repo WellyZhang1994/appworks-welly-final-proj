@@ -7,6 +7,10 @@ contract CommentGovernance is Timelock, QuadraticRewardModel{
 
     mapping (uint256 => VotingInfo) internal _votes;
 
+    function executeable(uint256 commentId) view external returns(bool){
+        return _executeable(_votes[commentId]);
+    }
+
     function _addVoting(uint256 commentId) internal {
         require(_votes[commentId].commentId == 0, "CommentGovernance: the voting is existed!");
         VotingInfo memory voteInfo;
@@ -20,9 +24,9 @@ contract CommentGovernance is Timelock, QuadraticRewardModel{
     function _claimResult(uint commentId, uint256[] memory against, uint256[] memory agree) internal returns(uint256){
         uint256 reward = 0;
         require(_votes[commentId].isExecute == false, "CommentGovernance: execute: the voting is executed!");
-        _votes[commentId].isExecute = true;
         bool canExecute = _executeable(_votes[commentId]);
         if (canExecute) {
+            _votes[commentId].isExecute = true;
             reward = _getReward(against, agree);
         }
         return reward;
