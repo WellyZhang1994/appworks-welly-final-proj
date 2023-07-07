@@ -45,11 +45,11 @@ const useStyles = makeStyles((theme: Theme) =>
         mainContainer: {
             borderRadius:10,
             padding: '40px 50px',
-            height: '100%',
-            width: '700px',
+            height: '90%',
+            width: '600px',
             backgroundColor: '#FFF',
             boxShadow: '0px 0px 20px rgba(0, 115, 250, 0.1)',
-            overflow: "auto",
+            overflowY: "auto",
             whiteSpace: "nowrap",
             position: 'relative'
         },
@@ -262,8 +262,8 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
     
     return (
         <Grid container direction='column' justifyContent='center' alignItems='center' className={classes.main}>
-            <Grid container direction='column' className={classes.mainContainer} >
-                <Grid item container justifyContent='flex-start' alignContent='center'>
+            <Grid container alignContent='flex-start' className={classes.mainContainer} >
+                <Grid item container  alignContent='center'>
                     <Grid item style={{marginRight:'20px'}}>
                          <Typography className={classes.loginWord}>
                             {"Companies"}
@@ -353,12 +353,13 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                         </Dialog>
                     </Grid>
                 </Grid>
-                <Grid item container direction='column' alignContent='flex-start' >
+                <Grid item container direction='column' style={{ width: '100%', marginTop:'20px'}} >
                     {
                         commentListByCompany.map((comment: any) =>
                         {
                             return (
-                                <Card key={comment.id }  style={{ width: '100%', marginTop:'20px' }}>
+                                <Grid item key={comment.id} style={{ width: '100%', height:'200px' }}>
+                                    <Card key={comment.id} >
                                     <Grid container direction='column'>
                                         <Grid item container justifyContent='space-between'>
                                             <Grid item>
@@ -429,7 +430,7 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                                                                 </DialogContent>
                                                                 <DialogActions>
                                                                     <Typography style={{marginRight:'10px'}}>
-                                                                        {'投票'}
+                                                                        {'Vote'}
                                                                     </Typography>
                                                                     <TextField
                                                                         margin="dense"
@@ -451,6 +452,7 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                                         </Grid>
                                     </Grid>
                                 </Card>
+                            </Grid>
                             )
                         })
                     }

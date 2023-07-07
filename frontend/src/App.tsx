@@ -15,7 +15,7 @@ const App: any = () =>
       <div className="page" >
         {<Header />}
         <Switch>
-          <Route exact path="/" component={homePage} />
+          <Route exact path="/" component={companyPage} />
           <Route exact path="/company" component={companyPage} />
           <Route exact path="/about" component={aboutUsPage} />
           <Route exact path="*" component={notfound} />

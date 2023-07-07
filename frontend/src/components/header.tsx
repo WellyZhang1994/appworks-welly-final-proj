@@ -62,7 +62,7 @@ const useStyles = makeStyles((theme: Theme) =>
     })
 );
 
-const ConnectWallet = async (setAddress: any, dispatch:any) =>
+const ConnectWallet = async (dispatch:any) =>
 {
     const provider = new ethers.BrowserProvider(window.ethereum)
     const accounts = await provider.send("eth_requestAccounts", [])
@@ -102,6 +102,18 @@ const Header = () =>  {
             init()
         }
     }, [loginUser])
+
+    useEffect(() =>
+    {
+        if (!_.isEmpty((window as any).ethereum) && loginUser === '')
+        {
+            const init = async () =>
+            {
+                await ConnectWallet(dispatch)
+            }
+            init()
+        }
+    },[])
     
     return(
         <Grid container direction={'row'} className={classes.main} >
@@ -109,7 +121,7 @@ const Header = () =>  {
                 <AppBar position="fixed" className={classes.bar}>
                     <Toolbar>
                         <Grid container  alignItems='center' style={{ height: '100px', width: '100%' }}>
-                            <Grid item lg={4} md={4}>
+                            <Grid item lg={6} md={6}>
                                 <Grid container alignContent='center' justifyContent='flex-start'>
                                     <Grid item style={{marginRight: '36px'}}>
                                         <Typography style={{color:'#98a1c0'}} onClick={()=> history.push('/')}>{'Logo'}</Typography>
@@ -123,10 +135,7 @@ const Header = () =>  {
                                     </Grid>
                                 </Grid>
                             </Grid>
-                            <Grid item lg={4} md={4} >
-                                
-                            </Grid>
-                            <Grid item lg={4} md={4}>
+                            <Grid item lg={6} md={6}>
                                 <Grid container alignItems='center' justifyContent='flex-end'>
                                     <Grid item>
                                         <Typography style={{ color: '#98a1c0' }}>
@@ -152,7 +161,7 @@ const Header = () =>  {
                                         }
                                     </Grid>
                                     <Grid item style={{marginRight:'20px'}}>
-                                        <Button disableRipple className={classes.button} onClick={() => {  ConnectWallet(loginUser,dispatch) }}>Connect</Button>
+                                        <Button disableRipple className={classes.button} onClick={() => {  ConnectWallet(dispatch) }}>Connect</Button>
                                     </Grid>
                                 </Grid>
                             </Grid> 

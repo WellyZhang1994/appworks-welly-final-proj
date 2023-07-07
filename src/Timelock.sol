@@ -18,8 +18,8 @@ contract Timelock {
     }
 
     function _executeable(VotingInfo memory voteInfo) internal view returns (bool) {
-        require(getBlockTimestamp() >= voteInfo.createTime + DELAY, "Timelock: ");
-        require(getBlockTimestamp() <= voteInfo.createTime + GRACE_PERIOD, "Timelock: ");
+        require(getBlockTimestamp() >= voteInfo.createTime + DELAY, 'Timelock: cannot execute during delay period!' );
+        require(getBlockTimestamp() <= voteInfo.createTime + GRACE_PERIOD, 'Timelock: cannot execute after grace period!');
         return true;
     }
 
