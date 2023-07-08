@@ -12,7 +12,7 @@ import {
 
 import { Checkbox } from '@mui/material';
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
-import _ from 'lodash'
+import _, { set } from 'lodash'
 import EmailIcon from '@mui/icons-material/Email';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { commentAbi, commentProxyAddress } from '../../contracts/comment';
@@ -186,7 +186,14 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
         console.log(transactionReceipt)
         handleClose(setDigOpen);
         setIsLoading(false)
-        getCompanyList()
+        setCompanyName('')
+        setCompanyDescription('')
+        setUserSalary(0)
+        getCompanyList().then((x: any) =>
+        {
+            setSelectedCompany(companyName)
+            getCompanyByComapany(companyName)
+        })
     }
 
     const addonTicket = async (ehterAmount: number) =>
@@ -211,6 +218,7 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
         }
         handleClose(setAddonTicketOpen);
         setIsLoading(false)
+        setAddonValue(0)
         getBalance()
     } 
 
@@ -227,6 +235,7 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
         }
         handleClose(setDepositOpen);
         setIsLoading(false)
+        setDepositTokenAmount(0)
         getBalance()
     }    
 

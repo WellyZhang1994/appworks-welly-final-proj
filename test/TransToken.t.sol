@@ -70,7 +70,7 @@ contract TransTokenTest is Test {
         vm.stopPrank();
     }
 
-    function testVotesCount() public {
+    function testAddonLimit() public {
         deal(_user1, 1e18);
         vm.startPrank(_user1);
         trans.deposit{ value: 1e18 }();
