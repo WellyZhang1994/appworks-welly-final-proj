@@ -121,8 +121,6 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
     const [depositTokenAmount, setDepositTokenAmount] = React.useState<number>(0);
     const [addonValue, setAddonValue] = React.useState<number>(0);
 
-    const [executable, setExecutable] = React.useState<boolean>(false);
-
     const handleClickOpen = (f: any) => {
         f(true);
     };
@@ -138,16 +136,6 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
         const comment = await commentContractInstance.getCommentDetails(id, name)
         if (comment)
         {
-            let executableValue = false;
-            try
-            {
-                await commentContractInstance.executeable(Number(comment['0']));
-                executableValue = true;
-            }
-            catch(e)
-            {
-                console.log(e)
-            }
             const votes = {
                 'agree': _.values(comment['7']['1']),
                 'against': _.values(comment['7']['0'])
@@ -163,7 +151,6 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                 votes: votes
             }
             setCompanyDetail(tempResult)
-            setExecutable(executableValue)
             setDetailOpen(true);
         }
 
@@ -577,7 +564,9 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                                                             {'Detail'}
                                                         </Typography>
                                                     </Button>
-                                                        <Dialog open={detailOpen} onClose={handleDetailClose}>
+                                                        {
+                                                            companyDetail?.id === comment.id ?
+                                                                <Dialog open={detailOpen} onClose={handleDetailClose}>
                                                             <Grid container justifyContent='space-between'>
                                                                 <DialogTitle>Comment Details</DialogTitle>
                                                             </Grid>
@@ -607,7 +596,6 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                                                                     </DialogContentText>
                                                                 </DialogContent>
                                                                 <DialogActions>
-                                                                    
                                                                     <Typography style={{marginRight:'10px'}}>
                                                                         {'Vote'}
                                                                     </Typography>
@@ -625,7 +613,9 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                                                                     <Button onClick={() => { setIsLoading(true); commentVotes(companyDetail?.id, companyDetail?.name, 0, votes) }}>Against</Button>
                                                                 </DialogActions>
                                                             </LoadingOverlay>
-                                                        </Dialog>
+                                                        </Dialog>: ""
+                                                        }
+                                                        
                                                 </CardActions>
                                             </Grid>
                                         </Grid>
