@@ -70,21 +70,15 @@ contract TransTokenTest is Test {
         vm.stopPrank();
     }
 
-    function testNumCheckpoints() public {
-        deal(_user1, 1e18);
-        vm.startPrank(_user1);
-        trans.deposit{ value: 1e18 }();
-        trans.addOnTickets(1e18);
-        assertEq(trans.numCheckpoints(_user1), 1);
-        vm.stopPrank(); 
-    }
-
     function testVotesCount() public {
         deal(_user1, 1e18);
         vm.startPrank(_user1);
         trans.deposit{ value: 1e18 }();
         trans.addOnTickets(1e2);
         assertEq(trans.getCurrentVotes(_user1), 1e2);
+        vm.expectRevert("TransToken: Can only add on tickets once a day");
+        trans.addOnTickets(2e2);
+        vm.warp(block.timestamp + 1 days);
         trans.addOnTickets(2e2);
         assertEq(trans.getCurrentVotes(_user1), 3e2);
         vm.stopPrank(); 

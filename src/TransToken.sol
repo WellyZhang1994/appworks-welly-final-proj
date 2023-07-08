@@ -22,12 +22,11 @@ contract TransToken is ERC20, Ownable{
     mapping (address => address) public delegates;
 
     struct Checkpoint {
-        uint fromBlock;
-        uint votes;
+        uint currentVotes;
+        uint lastAddonTime;
     }
 
-    mapping (address => mapping (uint => Checkpoint)) public checkpoints;
-    mapping (address => uint) public numCheckpoints;
+    mapping (address => Checkpoint) public checkpoints;
 
     constructor(string memory name, string memory symbol, uint8 decimalsValue) ERC20(name, symbol) {
         allowers[msg.sender] = true;
@@ -70,8 +69,10 @@ contract TransToken is ERC20, Ownable{
     }    
 
     function addOnTickets(uint256 amount) public {
+        uint lastAddonTime = checkpoints[msg.sender].lastAddonTime;
+        require(lastAddonTime == 0 || lastAddonTime + 1 days <= block.timestamp, "TransToken: Can only add on tickets once a day");
         require(balanceOf(msg.sender) >= amount, "TransToken: the balance of delegator is not sufficient");
-        _delegate(msg.sender, amount, true);
+        _moveDelegates(msg.sender, amount, true);
     }
 
     function consumeTickets(address consumer, uint256 amount) public onlyAllowers returns (bool){
@@ -80,7 +81,7 @@ contract TransToken is ERC20, Ownable{
     }
 
     function _consumeTickets(address consumer, uint256 amount) private returns (bool){
-        _delegate(consumer, amount, false);
+        _moveDelegates(consumer, amount, false);
         return true;
     }
 
@@ -89,62 +90,21 @@ contract TransToken is ERC20, Ownable{
     }
 
     function getCurrentVotes(address account) external view returns (uint) {
-        uint nCheckpoints = numCheckpoints[account];
-        return nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
-    }
-
-    function getPriorVotes(address account, uint blockNumber) public view returns (uint) {
-        require(blockNumber <= block.number, "TransToken: getPriorVotes: not yet determined");
-
-        uint nCheckpoints = numCheckpoints[account];
-        if (nCheckpoints == 0) {
-            return 0;
-        }
-
-        if (checkpoints[account][nCheckpoints - 1].fromBlock <= blockNumber) {
-            return checkpoints[account][nCheckpoints - 1].votes;
-        }
-
-        if (checkpoints[account][0].fromBlock > blockNumber) {
-            return 0;
-        }
-
-        uint lower = 0;
-        uint upper = nCheckpoints - 1;
-        while (upper > lower) {
-            uint center = upper - (upper - lower) / 2; 
-            Checkpoint memory cp = checkpoints[account][center];
-            if (cp.fromBlock == blockNumber) {
-                return cp.votes;
-            } else if (cp.fromBlock < blockNumber) {
-                lower = center;
-            } else {
-                upper = center - 1;
-            }
-        }
-        return checkpoints[account][lower].votes;
-    }
-
-    function _delegate(address changer, uint256 amount, bool isAddedon) internal {
-        _moveDelegates(changer, amount, isAddedon);
+        return checkpoints[account].currentVotes;
     }
 
     function _moveDelegates(address changer, uint256 amount, bool isAddedon) internal {
+        if (isAddedon == true) {
+            checkpoints[changer].lastAddonTime = block.timestamp;
+        }
         if (changer != address(0) && amount > 0) {
-            uint srcRepNum = numCheckpoints[changer];
-            uint srcRepOld = srcRepNum > 0 ? checkpoints[changer][srcRepNum - 1].votes : 0;
+            uint srcRepOld = checkpoints[changer].currentVotes;
             uint srcRepNew = isAddedon == true ? srcRepOld + amount : srcRepOld - amount;
-            _writeCheckpoint(changer, srcRepNum, srcRepNew);
+            _writeCheckpoint(changer, srcRepNew);
         }
     }
 
-    function _writeCheckpoint(address delegatee, uint nCheckpoints, uint newVotes) internal {
-      uint blockNumber = block.number;
-      if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber) {
-          checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
-      } else {
-          checkpoints[delegatee][nCheckpoints] = Checkpoint(blockNumber, newVotes);
-          numCheckpoints[delegatee] = nCheckpoints + 1;
-      }
+    function _writeCheckpoint(address delegatee, uint newVotes) internal {
+        checkpoints[delegatee].currentVotes = newVotes;
     }
 }
