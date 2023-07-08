@@ -307,7 +307,7 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
             setIsLoading(false)
             setVotes(0)
             setDetailOpen(false)
-            
+            getBalance();
         }
         catch (e:any)
         {
