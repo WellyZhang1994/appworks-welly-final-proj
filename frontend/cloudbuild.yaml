@@ -5,7 +5,7 @@ steps:
       [
         'build',
         '-t',
-        'asia-east1-docker.pkg.dev',
+        'asia-east1-docker.pkg.dev/welly-demo/appworks-school-final/frontend',
         '.',
       ]
   # Push the container image to Artifact Registry
@@ -13,7 +13,7 @@ steps:
     args:
       [
         'push',
-        'asia-east1-docker.pkg.dev',
+        'asia-east1-docker.pkg.dev/welly-demo/appworks-school-final/frontend',
       ]
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -22,9 +22,9 @@ steps:
       [
         'run',
         'deploy',
-        '',
+        'appworks-school-final-frontend',
         '--image',
-        '',
+        'asia-east1-docker.pkg.dev/welly-demo/appworks-school-final/frontend',
         '--region',
         'asia-east1',
         '--allow-unauthenticated',
@@ -34,4 +34,4 @@ steps:
         'managed',
       ]
 images:
-  - 'asia-east1-docker.pkg.dev'
+  - 'asia-east1-docker.pkg.dev/welly-demo/appworks-school-final/frontend'
