@@ -33,6 +33,12 @@
 	```
 	forge script script/Comment.s.sol:CommentScript --broadcast --verify --rpc-url https://eth-sepolia.g.alchemy.com/v2/{api_key} 
 	```
+
+	final contract (sepolia):
+	proxy: 0xDED2b3835E52d2a661cacB75eE852A09FB1A085D
+	commentV1: 0x12b2DE069B0ce62c4a865F98cBC31F837DE8138c
+	erc20: 0x35d95c919b63e763f1a179e09262cBaE657DdF35
+
 - Frontend
 	Local Environment
 	```

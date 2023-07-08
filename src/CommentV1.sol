@@ -12,8 +12,6 @@ contract CommentV1 is CommentGovernance{
         string name;
         string description;
         address creator;
-        uint256 startBlockNumber;
-        uint256 stopBlockNumber;
         Status status;
         CommentVotes votes;
     }
@@ -64,8 +62,6 @@ contract CommentV1 is CommentGovernance{
                 description: _description, 
                 salary: _salary,
                 creator: msg.sender,
-                startBlockNumber: block.number,
-                stopBlockNumber: 0,
                 status: Status.Voting,
                 votes: CommentVotes(against, agree)
             }
@@ -120,7 +116,7 @@ contract CommentV1 is CommentGovernance{
     function vote(uint commentId, string calldata companyName, VoteTypes voteTypes, uint256 amount) external {
         require(_isVoted[commentId][msg.sender] == false, "CommentV1: vote: you have voted!");
         Comment storage comment = _commentDetail[companyName][commentId];
-        require(ITransToken(_transTokenAddress).getPriorVotes(msg.sender, comment.startBlockNumber) >= amount, "CommentV1: vote: you don't have enough votes!");
+        require(ITransToken(_transTokenAddress).getCurrentVotes(msg.sender) >= amount, "CommentV1: vote: you don't have enough votes!");
         CommentVotes storage currentVotes = comment.votes;
         if(voteTypes == VoteTypes.Against) { currentVotes.against.push(amount); }
         if(voteTypes == VoteTypes.Agree) { currentVotes.agree.push(amount);}

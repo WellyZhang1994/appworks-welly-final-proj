@@ -11,19 +11,19 @@ contract Timelock {
 
     uint public constant GRACE_PERIOD = 7 days;
     uint public constant DELAY = 1 days;
-    mapping (uint256 => VotingInfo) private queuedVoting;
+    mapping (uint256 => VotingInfo) private _queuedVoting;
 
     function _addVotingQueue(VotingInfo memory voteInfo) internal {
-        queuedVoting[voteInfo.commentId] = voteInfo;
+        _queuedVoting[voteInfo.commentId] = voteInfo;
     }
 
     function _executeable(VotingInfo memory voteInfo) internal view returns (bool) {
-        require(getBlockTimestamp() >= voteInfo.createTime + DELAY, 'Timelock: cannot execute during delay period!' );
-        require(getBlockTimestamp() <= voteInfo.createTime + GRACE_PERIOD, 'Timelock: cannot execute after grace period!');
+        require(_getBlockTimestamp() >= voteInfo.createTime + DELAY, 'Timelock: cannot execute during delay period!' );
+        require(_getBlockTimestamp() <= voteInfo.createTime + GRACE_PERIOD, 'Timelock: cannot execute after grace period!');
         return true;
     }
 
-    function getBlockTimestamp() private view returns (uint) {
+    function _getBlockTimestamp() private view returns (uint) {
         return block.timestamp;
     }
 }
