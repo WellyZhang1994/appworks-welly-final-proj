@@ -16,6 +16,7 @@ import _ from 'lodash'
 import EmailIcon from '@mui/icons-material/Email';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { commentAbi, commentProxyAddress } from '../../contracts/comment';
+import { transTokenABI, transTokenAddress } from '../../contracts/transToken';
 import NativeSelect from '@mui/material/NativeSelect';
 import MenuItem from '@mui/material/MenuItem';
 import { ethers } from "ethers";
@@ -28,6 +29,7 @@ import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import LoadingOverlay from 'react-loading-overlay-ts';
+import Chip from '@mui/material/Chip';
 
 interface Props {
     children: JSX.Element | JSX.Element[];
@@ -101,22 +103,31 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
     const [companyList, setCompanyList] = useState<string[]>([])
     const [commentListByCompany, setCommentListByCompany] = useState<string[]>([])
 
-    const [digOpen, setDigOpen] = React.useState(false);
     const [companyName, setCompanyName] = React.useState('');
     const [companyDescription, setCompanyDescription] = React.useState('');
     const [userSalary, setUserSalary] = React.useState(0);
 
     const [detailOpen, setDetailOpen] = React.useState(false);
+    const [digOpen, setDigOpen] = React.useState(false);
+    const [depositOpen, setDepositOpen] = React.useState(false);
+    const [addonTikectOpen, setAddonTicketOpen] = React.useState(false);
+
     const [companyDetail, setCompanyDetail] = React.useState<any>({});
     const [votes, setVotes] = React.useState(0);
     
     const [isLoading, setIsLoading] = useState(false)
+    const [balance, setBalance] = React.useState<number>(0);
+    const [totalVotes, setTotalVotes] = React.useState<number>(0);
+    const [depositTokenAmount, setDepositTokenAmount] = React.useState<number>(0);
+    const [addonValue, setAddonValue] = React.useState<number>(0);
 
-    const handleClickOpen = () => {
-        setDigOpen(true);
+    const [executable, setExecutable] = React.useState<boolean>(false);
+
+    const handleClickOpen = (f: any) => {
+        f(true);
     };
-    const handleClose = () => {
-        setDigOpen(false);
+    const handleClose = (f:any) => {
+        f(false);
     };
 
     const handleDetailClickOpen = async(id: number, name:string) =>
@@ -127,6 +138,16 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
         const comment = await commentContractInstance.getCommentDetails(id, name)
         if (comment)
         {
+            let executableValue = false;
+            try
+            {
+                await commentContractInstance.executeable(Number(comment['0']));
+                executableValue = true;
+            }
+            catch(e)
+            {
+                console.log(e)
+            }
             const votes = {
                 'agree': _.values(comment['7']['1']),
                 'against': _.values(comment['7']['0'])
@@ -142,6 +163,7 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                 votes: votes
             }
             setCompanyDetail(tempResult)
+            setExecutable(executableValue)
             setDetailOpen(true);
         }
 
@@ -162,9 +184,61 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
         return;
         }
         console.log(transactionReceipt)
-        handleClose();
+        handleClose(setDigOpen);
         setIsLoading(false)
         getCompanyList()
+    }
+
+    const addonTicket = async (ehterAmount: number) =>
+    {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const signer = await provider.getSigner()
+        const transContractInstance = new ethers.Contract(transTokenAddress, transTokenABI, signer)
+
+        try
+        {
+            const transaction = await transContractInstance.addOnTickets(ethers.parseEther(ehterAmount.toString()))
+            const transactionReceipt = await transaction.wait();
+            if (transactionReceipt.status !== 1)
+            {
+                alert('error message');
+                return;
+            }
+        }
+        catch (e:any)
+        {
+            alert(e.message.split('(action')[0])
+        }
+        handleClose(setAddonTicketOpen);
+        setIsLoading(false)
+        getBalance()
+    } 
+
+    const depositEth = async (ehterAmount: number) =>
+    {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const signer = await provider.getSigner()
+        const transContractInstance = new ethers.Contract(transTokenAddress, transTokenABI, signer)
+        const transaction = await transContractInstance.deposit({value: ethers.parseEther(ehterAmount.toString())})
+        const transactionReceipt = await transaction.wait();
+        if (transactionReceipt.status !== 1) {
+            alert('error message');
+        return;
+        }
+        handleClose(setDepositOpen);
+        setIsLoading(false)
+        getBalance()
+    }    
+
+    const getBalance = async () => 
+    {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const signer = await provider.getSigner()
+        const tokenInstance = new ethers.Contract(transTokenAddress, transTokenABI, signer)
+        const balance = await tokenInstance.balanceOf(loginUser)
+        const vote = await tokenInstance.getCurrentVotes(loginUser);
+        setBalance(Number(ethers.formatUnits(balance, 18)))
+        setTotalVotes(Number(ethers.formatUnits(vote, 18)))
     }
 
     const getCompanyList = async () =>
@@ -239,8 +313,9 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
             setDetailOpen(false)
             
         }
-        catch (error)
+        catch (e:any)
         {
+            alert(e.message.split('(action')[0])
             setIsLoading(false)
             setVotes(0)
             setDetailOpen(false)
@@ -259,50 +334,30 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
             init()
         }
     }, [loginUser])
+
+    useEffect(() =>
+    {
+        if (!_.isEmpty((window as any).ethereum) && loginUser !== '')
+        {
+            const init = async () =>
+            {
+                await getBalance();
+            }
+            init()
+        }
+    }, [loginUser])
     
     return (
         <Grid container direction='column' justifyContent='center' alignItems='center' className={classes.main}>
             <Grid container alignContent='flex-start' className={classes.mainContainer} >
-                <Grid item container  alignContent='center'>
-                    <Grid item style={{marginRight:'20px'}}>
-                         <Typography className={classes.loginWord}>
-                            {"Companies"}
-                        </Typography>
-                    </Grid>
+                <Grid item container justifyContent='space-between'>
                     <Grid item>
-                        <NativeSelect
-                            inputProps={{
-                                name: 'age',
-                                id: 'uncontrolled-native',
-                            }}
-                            value={selectedCompany}
-                            onChange={(event) =>
-                            {
-                                setSelectedCompany(event.target.value);
-                                getCompanyByComapany(event.target.value);
-                            }
-                            }
-                        >
-                            {companyList.map((com) =>
-                            {
-                                return <option key={com} value={com}>{com}</option>
-                            })}
-                        </NativeSelect>
-                    </Grid>
-                </Grid>
-                <Grid item container justifyContent='space-between' alignContent='center' >
-                    <Grid item>
-                         <Typography className={classes.loginWord}>
-                            {"Comments"}
-                        </Typography>
-                    </Grid>
-                    <Grid item>
-                        <Button variant='contained' style={{backgroundColor:'#98a1c0'}} onClick={()=> handleClickOpen()}>
+                        <Button variant='contained' style={{backgroundColor:'#98a1c0'}} onClick={()=> handleClickOpen(setDigOpen)}>
                             <Typography style={{color: '#FFF'}}>
                                 {"Create Comments"}
                             </Typography>
                         </Button>
-                        <Dialog open={digOpen} onClose={handleClose}>
+                        <Dialog open={digOpen} onClose={() => handleClose(setDigOpen)}>
                             <DialogTitle>Create Comment</DialogTitle>
                                 <LoadingOverlay
                                     active={isLoading}
@@ -346,11 +401,123 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                                     />
                                  </DialogContent>
                                 <DialogActions>
-                                    <Button onClick={handleClose}>Cancel</Button>
+                                    <Button onClick={() => handleClose(setDigOpen)}>Cancel</Button>
                                     <Button onClick={() => { setIsLoading(true); createComments(companyName, companyDescription, userSalary); }}>Create</Button>
                                 </DialogActions>
                             </LoadingOverlay>
                         </Dialog>
+                    </Grid>
+                    <Grid item>
+                        <Button variant='contained' style={{backgroundColor:'#98a1c0'}} onClick={()=> handleClickOpen(setDepositOpen)}>
+                            <Typography style={{color: '#FFF'}}>
+                                {"Deposit Token"}
+                            </Typography>
+                        </Button>
+                        <Dialog open={depositOpen} onClose={() => handleClose(setDepositOpen)}>
+                            <DialogTitle>Deposit Token</DialogTitle>
+                                <LoadingOverlay
+                                    active={isLoading}
+                                    spinner
+                                    text='Deposit...'
+                                >
+                                <DialogContent>
+                                    <DialogContentText>
+                                        Please input the amount of eth for deposing trans token.
+                                    </DialogContentText>
+                                    <TextField
+                                        margin="dense"
+                                        id="name"
+                                        label="ETH"
+                                        type="number"
+                                        value={depositTokenAmount}
+                                        onChange={(event)=> setDepositTokenAmount(parseFloat(event.target.value))}
+                                        fullWidth
+                                        variant="standard"
+                                    />
+                                 </DialogContent>
+                                <DialogActions>
+                                    <Button onClick={() => handleClose(setDepositOpen)}>Cancel</Button>
+                                    <Button onClick={() => { setIsLoading(true); depositEth(depositTokenAmount); }}>Deposit</Button>
+                                </DialogActions>
+                            </LoadingOverlay>
+                        </Dialog>
+                    </Grid>
+                    <Grid item>
+                        <Button variant='contained' style={{backgroundColor:'#98a1c0'}} onClick={()=> handleClickOpen(setAddonTicketOpen)}>
+                            <Typography style={{color: '#FFF'}}>
+                                {"Add-on ticket"}
+                            </Typography>
+                        </Button>
+                        <Dialog open={addonTikectOpen} onClose={() => handleClose(setAddonTicketOpen)}>
+                            <DialogTitle>Add-on Ticket</DialogTitle>
+                                <LoadingOverlay
+                                    active={isLoading}
+                                    spinner
+                                    text='Deposit...'
+                                >
+                                <DialogContent>
+                                    <DialogContentText>
+                                        Please input the amount of token to reveive the vote.
+                                    </DialogContentText>
+                                    <TextField
+                                        margin="dense"
+                                        id="name"
+                                        label="Trans Token"
+                                        type="number"
+                                        value={addonValue}
+                                        onChange={(event)=> setAddonValue(parseFloat(event.target.value))}
+                                        fullWidth
+                                        variant="standard"
+                                    />
+                                 </DialogContent>
+                                <DialogActions>
+                                    <Button onClick={() => handleClose(setAddonTicketOpen)}>Cancel</Button>
+                                    <Button onClick={() => { setIsLoading(true); addonTicket(addonValue); }}>Swap Vote</Button>
+                                </DialogActions>
+                            </LoadingOverlay>
+                        </Dialog>
+                    </Grid>
+                </Grid>
+                <Grid item container style={{marginTop:'10px', marginBottom:'10px'}}>
+                    <Grid item style={{marginRight:'10px'}}>
+                        <Chip label={`Current Token: ${balance}`} color="primary" variant="outlined" />
+                    </Grid>
+                    <Grid item>
+                        <Chip label={`Current Votes: ${ethers.parseEther(totalVotes.toString())}`} color="success" variant="outlined" />
+                    </Grid>
+                </Grid>
+                <Grid item container alignContent='center'>
+                    <Grid item style={{marginRight:'20px'}}>
+                         <Typography className={classes.loginWord}>
+                            {"Companies"}
+                        </Typography>
+                    </Grid>
+                    <Grid item>
+                        <NativeSelect
+                            inputProps={{
+                                name: 'age',
+                                id: 'uncontrolled-native',
+                            }}
+                            value={selectedCompany}
+                            onChange={(event) =>
+                            {
+                                setSelectedCompany(event.target.value);
+                                getCompanyByComapany(event.target.value);
+                            }
+                            }
+                        >
+                            {companyList.map((com) =>
+                            {
+                                return <option key={com} value={com}>{com}</option>
+                            })}
+                        </NativeSelect>
+                    </Grid>
+                </Grid>
+                <Grid item container justifyContent='space-between' alignContent='center' >
+                    <Grid item>
+                         <Typography className={classes.loginWord}>
+                            {"Comments"}
+                        </Typography>
                     </Grid>
                 </Grid>
                 <Grid item container direction='column' style={{ width: '100%', marginTop:'20px'}} >
@@ -401,8 +568,10 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                                                             {'Detail'}
                                                         </Typography>
                                                     </Button>
-                                                    <Dialog open={detailOpen} onClose={handleDetailClose}>
-                                                        <DialogTitle>Comment Details</DialogTitle>
+                                                        <Dialog open={detailOpen} onClose={handleDetailClose}>
+                                                            <Grid container justifyContent='space-between'>
+                                                                <DialogTitle>Comment Details</DialogTitle>
+                                                            </Grid>
                                                             <LoadingOverlay
                                                                     active={isLoading}
                                                                     spinner
@@ -429,6 +598,7 @@ const CompanyPage = (props:Props) :React.ReactElement<Props>  =>  {
                                                                     </DialogContentText>
                                                                 </DialogContent>
                                                                 <DialogActions>
+                                                                    
                                                                     <Typography style={{marginRight:'10px'}}>
                                                                         {'Vote'}
                                                                     </Typography>
